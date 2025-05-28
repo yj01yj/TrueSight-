@@ -41,14 +41,14 @@ TrueSight/
 ├── audio_model/                  # 음성 기반 딥페이크 탐지 모듈
 │   ├── audio_model.py
 │   ├── README.md
-│   └── audio_model_for_git/      # (사용자가 직접 추가해야 하는 모델 폴더)
+│   └── audio_model_for_git/      # (사용자가 직접 추가해야 하는 모델 폴더)🔗 Drive로 공유
 │       └── ...
 │
 ├── image_model/                  # 이미지 기반 딥페이크 탐지 모듈
 │   ├── image_model.py
 │   ├── model_architecture.py
 │   ├── README.md
-│   └── image_model_weights/      # (사용자가 직접 추가해야 하는 모델 폴더)
+│   └── image_model_weights/      # (사용자가 직접 추가해야 하는 모델 폴더)🔗 Drive로 공유
 │       └── KDF_final_model.pth
 │
 ├── multimodal_detector.py        # ✅ 이미지 + 음성 통합 판단 스크립트
