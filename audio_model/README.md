@@ -6,6 +6,7 @@
 ---
 
 ## 📁 폴더 구성
+```
 audio_model/
 ├── audio_model.py                # 딥페이크 추론 코드 (범용 구조)
 ├── README.md                     # 음성 모델에 대한 설명
@@ -13,6 +14,7 @@ audio_model/
     ├── config.json
     ├── pytorch_model.bin
     └── preprocessor_config.json
+```
 
 ---
 
