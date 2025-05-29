@@ -34,7 +34,7 @@ def predict_audio(file_path):
     label = "UNSURE" if abs(real_prob - fake_prob) < 0.05 else ("REAL" if real_prob > fake_prob else "FAKE")
 
     print(f"🎧 음성 예측 결과: {label} (REAL: {real_prob:.4f}, FAKE: {fake_prob:.4f})")
-    return real_prob, fake_prob
+    return fake_prob
 
 # 2. 이미지 예측 함수
 def predict_image(image_path):
@@ -62,21 +62,28 @@ def predict_image(image_path):
     label = "UNSURE" if abs(real_prob - fake_prob) < 0.05 else ("REAL" if real_prob > fake_prob else "FAKE")
 
     print(f"🖼️ 이미지 예측 결과: {label} (REAL: {real_prob:.4f}, FAKE: {fake_prob:.4f})")
-    return real_prob, fake_prob
+    return fake_prob
 
-# 3. 최종 통합 판단 함수
+# 3. Adaptive Weighted Voting 통합 판단 함수
 def multimodal_decision(audio_path, image_path):
-    audio_real, audio_fake = predict_audio(audio_path)
-    image_real, image_fake = predict_image(image_path)
+    audio_fake = predict_audio(audio_path)
+    image_fake = predict_image(image_path)
 
-    if audio_fake >= 0.95 or image_fake >= 0.95:
-        final = "FAKE"
-    elif max(audio_real, audio_fake) < 0.6 and max(image_real, image_fake) < 0.6:
-        final = "UNSURE"
+    # 더 높은 쪽에 0.6, 낮은 쪽에 0.4 가중치 부여
+    if image_fake > audio_fake:
+        final_score = 0.6 * image_fake + 0.4 * audio_fake
     else:
-        final = "REAL" if (audio_real + image_real) >= (audio_fake + image_fake) else "FAKE"
+        final_score = 0.4 * image_fake + 0.6 * audio_fake
 
-    print(f"🧠 최종 판단 결과: {final}")
+    # 최종 판단 기준
+    if final_score >= 0.7:
+        final = "FAKE"
+    elif final_score <= 0.4:
+        final = "REAL"
+    else:
+        final = "UNSURE"
+
+    print(f"🧠 최종 판단 결과: {final} (통합 점수: {final_score:.4f})")
     return final
 
 # 4. 예시 실행
