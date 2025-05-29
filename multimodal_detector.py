@@ -3,7 +3,7 @@ import torch
 import librosa
 import cv2
 import numpy as np
-
+import moviepy.editor as mp
 from transformers import AutoConfig, AutoFeatureExtractor, Wav2Vec2ForSequenceClassification
 from image_model.model_architecture import XceptionWithCBAM
 from torchvision import transforms
@@ -13,7 +13,21 @@ AUDIO_MODEL_DIR = "audio_model/audio_model_for_git"
 # 이미지 모델 경로
 IMAGE_MODEL_PATH = "image_model/image_model_weights/KDF_final_model.pth"
 
-# 1. 오디오 예측 함수
+# 🔹 0. 영상 → 음성 추출
+def extract_audio(video_path, output_audio_path="temp_audio.wav"):
+    clip = mp.VideoFileClip(video_path)
+    clip.audio.write_audiofile(output_audio_path, fps=16000, verbose=False, logger=None)
+    return output_audio_path
+
+# 🔹 0. 영상 → 대표 프레임 추출
+def extract_frame(video_path, output_frame_path="temp_frame.jpg"):
+    clip = mp.VideoFileClip(video_path)
+    frame = clip.get_frame(clip.duration / 2)  # 중간 지점 프레임 추출
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(output_frame_path, frame)
+    return output_frame_path
+
+# 1. 오디오 예측
 def predict_audio(file_path):
     config = AutoConfig.from_pretrained(AUDIO_MODEL_DIR, local_files_only=True)
     extractor = AutoFeatureExtractor.from_pretrained(AUDIO_MODEL_DIR, local_files_only=True)
@@ -36,7 +50,7 @@ def predict_audio(file_path):
     print(f"🎧 음성 예측 결과: {label} (REAL: {real_prob:.4f}, FAKE: {fake_prob:.4f})")
     return fake_prob
 
-# 2. 이미지 예측 함수
+# 2. 이미지 예측
 def predict_image(image_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = XceptionWithCBAM()
@@ -64,18 +78,16 @@ def predict_image(image_path):
     print(f"🖼️ 이미지 예측 결과: {label} (REAL: {real_prob:.4f}, FAKE: {fake_prob:.4f})")
     return fake_prob
 
-# 3. Adaptive Weighted Voting 통합 판단 함수
+# 3. Adaptive Weighted Voting
 def multimodal_decision(audio_path, image_path):
     audio_fake = predict_audio(audio_path)
     image_fake = predict_image(image_path)
 
-    # 더 높은 쪽에 0.6, 낮은 쪽에 0.4 가중치 부여
     if image_fake > audio_fake:
         final_score = 0.6 * image_fake + 0.4 * audio_fake
     else:
         final_score = 0.4 * image_fake + 0.6 * audio_fake
 
-    # 최종 판단 기준
     if final_score >= 0.7:
         final = "FAKE"
     elif final_score <= 0.4:
@@ -86,8 +98,15 @@ def multimodal_decision(audio_path, image_path):
     print(f"🧠 최종 판단 결과: {final} (통합 점수: {final_score:.4f})")
     return final
 
-# 4. 예시 실행
+# 4. 예시 실행 (영상 하나만 입력하면 자동 분리)
 if __name__ == "__main__":
-    audio_input = "test_samples/sample_audio.wav"
-    image_input = "test_samples/sample_image.jpg"
+    video_path = "test_samples/sample_video.mp4"
+
+    audio_input = extract_audio(video_path)
+    image_input = extract_frame(video_path)
+
     multimodal_decision(audio_input, image_input)
+
+    # 사용 후 임시파일 삭제 (선택사항)
+    os.remove(audio_input)
+    os.remove(image_input)
